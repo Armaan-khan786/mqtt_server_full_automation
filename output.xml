@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.4.1 (Python 3.14.2 on win32)" generated="2026-03-06T17:15:21.343579" rpa="false" schemaversion="5">
+<suite id="s1" name="Mqtt Test" source="C:\Users\a7577\Desktop\mqtt_sever_automation\mqtt_test.robot">
+<test id="s1-t1" name="Compile ESP Firmware" line="6">
+<kw name="Compile Esp" owner="mqtt_helper">
+<msg time="2026-03-06T17:15:44.089973" level="INFO">Starting ESP32 compilation...
+Compilation successful</msg>
+<status status="PASS" start="2026-03-06T17:15:21.392509" elapsed="22.697862"/>
+</kw>
+<status status="PASS" start="2026-03-06T17:15:21.391551" elapsed="22.699687"/>
+</test>
+<test id="s1-t2" name="Flash ESP Firmware" line="9">
+<kw name="Flash Esp" owner="mqtt_helper">
+<msg time="2026-03-06T17:16:05.702737" level="INFO">Uploading firmware to ESP32...
+Upload successful</msg>
+<status status="PASS" start="2026-03-06T17:15:44.093285" elapsed="21.609707"/>
+</kw>
+<status status="PASS" start="2026-03-06T17:15:44.092281" elapsed="21.611543"/>
+</test>
+<test id="s1-t3" name="Validate Temperature Data" line="12">
+<kw name="Validate Temperature" owner="mqtt_helper">
+<msg time="2026-03-06T17:16:14.249023" level="INFO">Checking temperature output from ESP32...
+ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:4876
+ho 0 tail 12 room 4
+load:0x40078000,len:16560
+load:0x40080400,len:3500
+entry 0x400805b4
+WIFI_CONNECTING
+...
+WIFI_CONNECTED
+MQTT_CONNECTING
+MQTT_CONNECTED
+AUTH_TOKEN:ESP_TOKEN_123
+TEMP:41.02
+Temperature validation PASS</msg>
+<status status="PASS" start="2026-03-06T17:16:05.706268" elapsed="8.542957"/>
+</kw>
+<status status="PASS" start="2026-03-06T17:16:05.705305" elapsed="8.544651"/>
+</test>
+<test id="s1-t4" name="Validate WiFi RSSI" line="15">
+<kw name="Validate Wifi" owner="mqtt_helper">
+<msg time="2026-03-06T17:16:19.268685" level="INFO">Validating WiFi + Internet + RSSI...
+Checking real internet connectivity...</msg>
+<msg time="2026-03-06T17:16:19.269104" level="FAIL">Internet is OFF - validation failed</msg>
+<status status="FAIL" start="2026-03-06T17:16:14.252923" elapsed="5.018345">Internet is OFF - validation failed</status>
+</kw>
+<status status="FAIL" start="2026-03-06T17:16:14.251583" elapsed="5.020689">Internet is OFF - validation failed</status>
+</test>
+<status status="FAIL" start="2026-03-06T17:15:21.345292" elapsed="57.929590"/>
+</suite>
+<statistics>
+<total>
+<stat pass="3" fail="1" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Mqtt Test" id="s1" pass="3" fail="1" skip="0">Mqtt Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
