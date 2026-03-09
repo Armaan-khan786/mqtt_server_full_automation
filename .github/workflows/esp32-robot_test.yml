@@ -13,32 +13,33 @@ jobs:
 
     steps:
 
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Python
+      - name: Check Python
         run: python --version
 
-      - name: Install dependencies
+      - name: Install Python Packages
         run: |
           pip install robotframework
           pip install pyserial
           pip install amqtt
 
       - name: Start MQTT Broker
+        shell: powershell
         run: |
-          start /B python mqtt_server.py
+          Start-Process python -ArgumentList "mqtt_server.py"
 
-      - name: Wait for broker
-        run: timeout /t 5
+      - name: Wait for Broker
+        run: Start-Sleep -Seconds 5
 
       - name: Run Robot Tests
         run: robot mqtt_test.robot
 
-      - name: Upload Robot Report
+      - name: Upload Robot Reports
         uses: actions/upload-artifact@v4
         with:
-          name: robot-results
+          name: robot-report
           path: |
             report.html
             log.html
