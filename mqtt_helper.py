@@ -3,102 +3,189 @@ import serial
 import time
 import socket
 
-
 PORT = "COM6"
 BAUD = 115200
 
 
 def compile_esp():
-    print("Starting ESP32 compilation...")
+
+    print("Compiling ESP32 firmware...")
 
     subprocess.run([
-        "./arduino-cli.exe",
+        "./Arduino-CLI.exe",
         "compile",
         "--fqbn",
         "esp32:esp32:esp32",
         "temperature"
     ], check=True)
 
-    print("Compilation successful")
+    print("Compilation SUCCESS")
 
 
 def flash_esp():
-    print("Uploading firmware to ESP32...")
 
-    # wait for port stabilization
+    print("Flashing ESP32 firmware...")
+
     time.sleep(5)
 
     subprocess.run([
-        "./arduino-cli.exe",
+        "./Arduino-CLI.exe",
         "upload",
-        "-p", PORT,
+        "-p",
+        PORT,
         "--fqbn",
         "esp32:esp32:esp32",
         "temperature"
     ], check=True)
 
-    print("Upload successful")
+    print("Upload SUCCESS")
+
+
+def open_serial():
+
+    print("Opening serial port:", PORT)
+
+    ser = serial.Serial(PORT, BAUD, timeout=5)
+
+    time.sleep(3)
+
+    return ser
+
+
+def validate_wifi():
+
+    print("Checking WiFi connection")
+
+    ser = open_serial()
+
+    wifi_connected = False
+
+    for i in range(60):
+
+        line = ser.readline().decode(errors="ignore").strip()
+
+        print(line)
+
+        if "WIFI_CONNECTED" in line:
+            wifi_connected = True
+            break
+
+    ser.close()
+
+    if not wifi_connected:
+        raise Exception("WiFi connection failed")
+
+    print("WiFi validation PASS")
+
+
+def validate_mqtt_connection():
+
+    print("Checking MQTT connection")
+
+    ser = open_serial()
+
+    mqtt_connected = False
+    mqtt_failed = False
+
+    for i in range(80):
+
+        line = ser.readline().decode(errors="ignore").strip()
+
+        print(line)
+
+        if "MQTT_CONNECTED" in line:
+            mqtt_connected = True
+            break
+
+        if "MQTT_FAILED" in line:
+            mqtt_failed = True
+            break
+
+    ser.close()
+
+    if mqtt_connected:
+        print("MQTT connection PASS")
+        return
+
+    if mqtt_failed:
+        raise Exception("MQTT authentication failed")
+
+    raise Exception("MQTT server not reachable")
 
 
 def validate_temperature():
-    print("Checking temperature output from ESP32...")
 
-    ser = serial.Serial(PORT, BAUD, timeout=5)
-    time.sleep(3)
+    print("Checking temperature sensor output")
+
+    ser = open_serial()
 
     temp_found = False
 
     for i in range(60):
+
         line = ser.readline().decode(errors="ignore").strip()
+
         print(line)
 
-        if "temp" in line.lower() or "temperature" in line.lower():
+        if "TEMP:" in line:
             temp_found = True
             break
 
     ser.close()
 
     if not temp_found:
-        raise Exception("Temperature message not received")
+        raise Exception("Temperature data not found")
 
     print("Temperature validation PASS")
 
 
-def check_internet():
-    print("Checking real internet connectivity...")
+def validate_rssi():
 
-    try:
-        socket.create_connection(("8.8.8.8", 53), timeout=5)
-        print("Internet connection OK")
-        return True
-    except OSError:
-        return False
+    print("Checking WiFi RSSI")
 
-
-def validate_wifi():
-    print("Validating WiFi + Internet + RSSI...")
-
-    # Step 1 : Check Internet
-    if not check_internet():
-        raise Exception("Internet is OFF - validation failed")
-
-    # Step 2 : Check ESP WiFi RSSI
-    ser = serial.Serial(PORT, BAUD, timeout=5)
-    time.sleep(3)
+    ser = open_serial()
 
     rssi_found = False
 
     for i in range(60):
+
         line = ser.readline().decode(errors="ignore").strip()
+
         print(line)
 
-        if "rssi" in line.lower():
+        if "RSSI:" in line:
             rssi_found = True
             break
 
     ser.close()
 
     if not rssi_found:
-        raise Exception("ESP32 WiFi RSSI not detected")
+        raise Exception("RSSI not detected")
 
-    print("WiFi RSSI validation PASS")
+    print("RSSI validation PASS")
+
+
+def validate_mqtt_publish():
+
+    print("Checking MQTT publish status")
+
+    ser = open_serial()
+
+    publish_success = False
+
+    for i in range(60):
+
+        line = ser.readline().decode(errors="ignore").strip()
+
+        print(line)
+
+        if "MQTT_PUBLISH_SUCCESS" in line:
+            publish_success = True
+            break
+
+    ser.close()
+
+    if not publish_success:
+        raise Exception("MQTT publish failed")
+
+    print("MQTT publish validation PASS")

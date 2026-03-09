@@ -9,8 +9,17 @@ Compile ESP Firmware
 Flash ESP Firmware
     Flash Esp
 
-Validate Temperature Data
+Validate WiFi Connection
+    Validate Wifi
+
+Validate MQTT Connection
+    Validate Mqtt Connection
+
+Validate Temperature Sensor
     Validate Temperature
 
 Validate WiFi RSSI
-    Validate Wifi
+    Validate Rssi
+
+Validate MQTT Publish
+    Validate Mqtt Publish

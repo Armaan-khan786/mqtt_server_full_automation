@@ -11,14 +11,14 @@ const char* password = "786786786j";
 const char* mqtt_server = "192.168.222.100";
 const int mqtt_port = 1885;
 
-/******** MQTT AUTH TOKEN ********/
+/******** MQTT AUTH ********/
 const char* mqtt_username = "token";
 const char* mqtt_token = "ESP_TOKEN_123";
 
 /******** LCD ********/
-LiquidCrystal_I2C lcd(0x27,16,2);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-/******** LM35 ********/
+/******** LM35 SENSOR ********/
 int sensorPin = 34;
 
 /******** MQTT CLIENT ********/
@@ -34,11 +34,20 @@ void setup_wifi() {
 
   Serial.println("WIFI_CONNECTING");
 
-  WiFi.begin(ssid,password);
+  WiFi.begin(ssid, password);
 
-  while(WiFi.status() != WL_CONNECTED){
+  int attempts = 0;
+
+  while (WiFi.status() != WL_CONNECTED) {
+
     delay(500);
     Serial.print(".");
+    attempts++;
+
+    if(attempts > 20){
+      Serial.println("\nWIFI_TIMEOUT");
+      return;
+    }
   }
 
   Serial.println("\nWIFI_CONNECTED");
@@ -50,44 +59,43 @@ void setup_wifi() {
   delay(2000);
 }
 
-/******** MQTT RECONNECT ********/
-void reconnect() {
+/******** MQTT CONNECT ********/
+void connectMQTT() {
 
-  while (!client.connected()) {
+  Serial.println("MQTT_CONNECTING");
 
-    Serial.println("MQTT_CONNECTING");
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("MQTT Connecting");
 
+  if (client.connect("ESP32Client", mqtt_username, mqtt_token)) {
+
+    Serial.println("MQTT_CONNECTED");
+
+    lcd.setCursor(0,1);
+    lcd.print("Connected");
+
+    delay(2000);
     lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("MQTT Connecting");
+  }
 
-    if (client.connect("ESP32Client", mqtt_username, mqtt_token)) {
+  else {
 
-      Serial.println("MQTT_CONNECTED");
-      Serial.print("AUTH_TOKEN:");
-      Serial.println(mqtt_token);
+    int errorCode = client.state();
 
-      lcd.setCursor(0,1);
-      lcd.print("Connected");
+    Serial.print("MQTT_FAILED:");
+    Serial.println(errorCode);
 
-      delay(2000);
-      lcd.clear();
+    lcd.setCursor(0,1);
+    lcd.print("Error:");
+    lcd.print(errorCode);
 
-    } else {
-
-      Serial.print("MQTT_FAILED:");
-      Serial.println(client.state());
-
-      lcd.setCursor(0,1);
-      lcd.print("Retrying...");
-
-      delay(3000);
-    }
+    delay(3000);
   }
 }
 
 /******** SETUP ********/
-void setup(){
+void setup() {
 
   Serial.begin(115200);
 
@@ -100,32 +108,64 @@ void setup(){
 }
 
 /******** LOOP ********/
-void loop(){
+void loop() {
 
+  /******** WIFI STATUS CHECK ********/
+  if (WiFi.status() != WL_CONNECTED) {
+
+    Serial.println("WIFI_DISCONNECTED");
+
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("WiFi Lost");
+
+    setup_wifi();
+    Serial.println("WIFI_RECONNECTED");
+  }
+
+  /******** MQTT STATUS CHECK ********/
   if (!client.connected()) {
-    reconnect();
+
+    Serial.println("MQTT_CONNECTION_LOST");
+
+    connectMQTT();
+    delay(3000);
+    return;
   }
 
   client.loop();
 
   /******** READ LM35 ********/
   int adcValue = analogRead(sensorPin);
+
   float voltage = adcValue * (3.3 / 4095.0);
+
   float temp = voltage * 100.0;
 
   /******** WIFI SIGNAL ********/
   int rssi = WiFi.RSSI();
 
+  if(rssi > -50){
+    Serial.println("RSSI_STRONG");
+  }
+  else if(rssi > -70){
+    Serial.println("RSSI_GOOD");
+  }
+  else{
+    Serial.println("RSSI_WEAK");
+  }
+
   /******** LCD DISPLAY ********/
+  lcd.clear();
+
   lcd.setCursor(0,0);
   lcd.print("Temp:");
   lcd.print(temp,1);
-  lcd.print("C   ");
+  lcd.print("C");
 
   lcd.setCursor(0,1);
   lcd.print("RSSI:");
   lcd.print(rssi);
-  lcd.print("dBm ");
 
   /******** SERIAL OUTPUT ********/
   Serial.print("TEMP:");
@@ -135,15 +175,20 @@ void loop(){
   Serial.println(rssi);
 
   /******** MQTT PAYLOAD ********/
-  char payload[80];
+  char payload[100];
 
   sprintf(payload,
-  "{\"token\":\"ESP_TOKEN_123\",\"temp\":%.2f,\"rssi\":%d}",
-  temp, rssi);
+  "{\"token\":\"%s\",\"temp\":%.2f,\"rssi\":%d}",
+  mqtt_token, temp, rssi);
 
-  if(client.publish("esp32/sensor", payload)){
+  /******** MQTT PUBLISH ********/
+  if (client.publish("esp32/sensor", payload)) {
+
     Serial.println("MQTT_PUBLISH_SUCCESS");
-  } else {
+  }
+
+  else {
+
     Serial.println("MQTT_PUBLISH_FAILED");
   }
 
