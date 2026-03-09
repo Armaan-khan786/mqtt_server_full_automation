@@ -1,0 +1,50 @@
+name: ESP32 Robot Automation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  esp32-test:
+
+    runs-on: self-hosted
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install robotframework
+          pip install pyserial
+          pip install amqtt
+
+      - name: Start MQTT Broker
+        run: |
+          python mqtt_server.py &
+        shell: bash
+
+      - name: Wait for Broker
+        run: |
+          timeout 10
+
+      - name: Run Robot Tests
+        run: |
+          robot mqtt_test.robot
+
+      - name: Upload Robot Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-test-report
+          path: |
+            report.html
+            log.html
+            output.xml
